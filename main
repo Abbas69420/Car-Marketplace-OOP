@@ -22,6 +22,9 @@ class Vehicle {
     string transmission;
 
     public:
+
+    Vehicle() : brand(""), model(""), year(0), mileage(0), colour(""), transmission("") {}
+
     Vehicle(string brand, string model, int year, int mileage, string colour, string transmission) {
         this->brand = brand;
         this->model = model;
@@ -122,7 +125,7 @@ class Review {
         this->reviewee = to;
         this->rating = max(1.0, min(stars, 5.0));
         
-        if (stars < 1.0 && stars > 5.0) {
+        if (stars < 1.0 || stars > 5.0) {
             cout << "Invalid rating provided. Rating must be between 1 and 5 stars. Defaulting to 3 stars." << endl;
         }
         
@@ -169,6 +172,10 @@ class Account {
     
     public: 
     static int totalAccountsCreated;
+
+    Account() : email(""), encryptedpassword(""), phone(""), firstName(""),
+    lastName(""), gender('U'), dob(""), accountId(0), isBanned(false),
+    inbox(nullptr), messageCount(0), memberSince("1/1/1970"), emailVerified(false) {}
 
     Account(string email, string firstName, string lastName, string phone, char gender, string dob) {
         this->email = email;
@@ -240,12 +247,12 @@ class Account {
         string encrypted = "";
         for (char c : rawpassword)
         {
-            encrypted += ((int)c + 3);
+            encrypted += char(c + 3);
         }
         return encrypted;
     }
 
-    bool authenticate(string inputEmail, string inputPassword){
+    bool authenticate(string inputEmail, string inputPassword) {
         if (inputEmail == email && encryptPassword(inputPassword) == encryptedpassword)
         {
             return true;
@@ -345,6 +352,10 @@ class Listing {
     public:
     static int totalListings;
 
+    Listing() : listingId(0), price(0), location(""),
+    description(""), seller(nullptr), status("Pending"),
+    car(Vehicle()) {}
+
     Listing (double price, string location, string description, Account* seller, const Vehicle& v) : car(v) {
         this->listingId = totalListings++;
         this->price = price;
@@ -395,20 +406,25 @@ class Listing {
     }
 
     void calculateInstallment(double downPaymentPercent, int years, double annualInterestRate) const {
-    double principal = price * (1 - (downPaymentPercent / 100));
-    double monthlyRate = annualInterestRate / 12 / 100;
-    int months = years * 12;
+        double principal = price * (1 - (downPaymentPercent / 100));
+        double monthlyRate = annualInterestRate / 12 / 100;
+        int months = years * 12;
+        
+        if (monthlyRate == 0) {
+            cout << "Invalid interest rate." << endl;
+            return;
+        }
 
-    double emi = (principal * monthlyRate * pow(1 + monthlyRate, months)) / (pow(1 + monthlyRate, months) - 1);
+        double emi = (principal * monthlyRate * pow(1 + monthlyRate, months)) / (pow(1 + monthlyRate, months) - 1);
 
-    cout << "\n--- Financing Estimate ---" << endl;
-    cout << "Down Payment: PKR " << price * (downPaymentPercent / 100) << endl;
-    cout << "Financed Amount: PKR " << principal << endl;
-    cout << "Monthly Installment: PKR " << emi << " for " << months << " months" << endl;
-    }
+        cout << "\n--- Financing Estimate ---" << endl;
+        cout << "Down Payment: PKR " << price * (downPaymentPercent / 100) << endl;
+        cout << "Financed Amount: PKR " << principal << endl;
+        cout << "Monthly Installment: PKR " << emi << " for " << months << " months" << endl;
+        }
 
-    int getListingId() const {
-        return listingId;
+        int getListingId() const {
+            return listingId;
     }
 
     const Vehicle& getVehicle() const {
@@ -450,7 +466,7 @@ class Seller : public Account {
         this->totalSales = 0;
         this->totalListings = 0;
         this->activeListings = 0;  
-        this->memberSince = Account::memberSince;
+        this->memberSince = "1/1/1970";
         this->verified = false;
         this->messages = 0;
         this->reviews = nullptr;
@@ -596,7 +612,7 @@ class Buyer : public Account {
         this->favouritesT = 0;
         this->city = city;
         this->messages = 0;
-        this->memberSince = Account::memberSince;
+        this->memberSince = "1/1/1970";
         this->verified = false;
     }
 
@@ -861,6 +877,11 @@ class Marketplace {
     }
 
     void postListing(Listing* newListing) {
+        if (newListing == nullptr || newListing->getSeller() == nullptr) {
+            cout << "Invalid listing." << endl;
+            return;
+        }
+
         int sellerListigns = 0;
         int targetAccountId = newListing->getSeller()->getAccountId();
 
@@ -970,16 +991,18 @@ class Marketplace {
     }
 
     ~Marketplace() {
-        for(int i = 0; i < userCount; i++)
-        {
-            delete users[i];
+        
+        if (users != nullptr) {
+            for(int i = 0; i < userCount; i++)
+                delete users[i];
+            delete[] users;
         }
-        for(int i = 0; i < listingCount; i++)
-        {
-            delete listings[i];
+
+        if (listings != nullptr) {
+            for(int i = 0; i < listingCount; i++)
+                delete listings[i];
+            delete[] listings;
         }
-        delete[] users;
-        delete[] listings;
     }
 };
 
