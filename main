@@ -120,9 +120,11 @@ class Review {
         this->reviewId = totalReviews++;
         this->reviewer = from;
         this->reviewee = to;
+        this->rating = max(1.0, min(stars, 5.0));
         
-        if (stars >= 1.0 && stars <= 5.0) this->rating = stars;
-        else this->rating = 5.0;
+        if (stars < 1.0 && stars > 5.0) {
+            cout << "Invalid rating provided. Rating must be between 1 and 5 stars. Defaulting to 3 stars." << endl;
+        }
         
         this->comment = text;
         this->helpfulVotes = 0;
@@ -162,6 +164,8 @@ class Account {
     bool isBanned;
     Message** inbox;
     int messageCount;
+    string memberSince;
+    bool emailVerified;
     
     public: 
     static int totalAccountsCreated;
@@ -177,6 +181,8 @@ class Account {
         this->accountId = totalAccountsCreated++;
         this->inbox = nullptr;
         this->messageCount = 0;
+        this->memberSince = "1/1/1970"; // Default date, can be updated later
+        this->emailVerified = false;
     }
 
     Account(const Account& other) {
@@ -187,7 +193,7 @@ class Account {
         lastName = other.lastName;
         gender = other.gender;
         dob = other.dob;
-        accountId = other.accountId;
+        accountId = totalAccountsCreated++;
         isBanned = other.isBanned;
         messageCount = other.messageCount;
 
@@ -199,6 +205,35 @@ class Account {
         } else {
             inbox = nullptr;
         }
+    }
+
+    Account& operator=(const Account& other) {
+        if (this == &other) {
+            return *this;
+        }
+
+        delete[] inbox;
+
+        email = other.email;
+        encryptedpassword = other.encryptedpassword;
+        phone = other.phone;
+        firstName = other.firstName;
+        lastName = other.lastName;
+        gender = other.gender;
+        dob = other.dob;
+        isBanned = other.isBanned;
+        messageCount = other.messageCount;
+
+        if (other.messageCount > 0) {
+            inbox = new Message*[other.messageCount];
+            for (int i = 0; i < other.messageCount; i++) {
+                inbox[i] = other.inbox[i];
+            }
+        } else {
+            inbox = nullptr;
+        }
+
+        return *this;
     }
 
     string encryptPassword(string rawpassword) {
@@ -232,6 +267,7 @@ class Account {
         if (response == 'Y' || response == 'y')
         {
             cout << "Email verified successfully!" << endl;
+            emailVerified = true;
         }
         else
         {
@@ -386,6 +422,10 @@ class Listing {
     string getLocation() const {
         return location;
     }
+
+    Account* getSeller() const {
+        return seller;
+    }
 };
 
 class Seller : public Account {
@@ -410,7 +450,7 @@ class Seller : public Account {
         this->totalSales = 0;
         this->totalListings = 0;
         this->activeListings = 0;  
-        this->memberSince = "1/1/1970"; // Default date, can be updated later
+        this->memberSince = Account::memberSince;
         this->verified = false;
         this->messages = 0;
         this->reviews = nullptr;
@@ -437,6 +477,33 @@ class Seller : public Account {
         } else {
             reviews = nullptr;
         }
+    }
+
+    Seller& operator=(const Seller& other) {
+        if (this == &other) return *this;
+        Account::operator=(other);
+        delete[] reviews;
+
+        sellerRating = other.sellerRating;
+        totalSales = other.totalSales;
+        city = other.city;
+        preferredContactMethod = other.preferredContactMethod;
+        totalListings = other.totalListings;
+        activeListings = other.activeListings;
+        memberSince = other.memberSince;
+        verified = other.verified;
+        messages = other.messages;
+        reviewCount = other.reviewCount;
+
+        if (other.reviewCount > 0) {
+            reviews = new Review*[other.reviewCount];
+            for (int i = 0; i < other.reviewCount; i++) {
+                reviews[i] = other.reviews[i];
+            }
+        } else {
+            reviews = nullptr;
+        }
+        return *this;
     }
 
     void updateSellerRating(double newRating) {
@@ -506,6 +573,10 @@ class Seller : public Account {
     }
 
     ~Seller() {
+    for (int i = 0; i < reviewCount; i++)
+    {
+        delete reviews[i];
+    }
     delete[] reviews;
     }
 };
@@ -519,13 +590,13 @@ class Buyer : public Account {
     bool verified;
 
     public:
-    Buyer (string email, string firstName, string lastName, string phone, char gender, string dob, int favourites, string city, int messages, string memberSince, bool verified)
+    Buyer (string email, string firstName, string lastName, string phone, char gender, string dob, int favourites, string city, int messages)
     : Account(email, firstName, lastName, phone, gender, dob) {
         this->favourites = nullptr;
         this->favouritesT = 0;
         this->city = city;
         this->messages = 0;
-        this->memberSince = "1/1/1970"; // Default date, can be updated later
+        this->memberSince = Account::memberSince;
         this->verified = false;
     }
 
@@ -544,6 +615,28 @@ class Buyer : public Account {
         } else {
             favourites = nullptr;
         }
+    }
+
+    Buyer& operator=(const Buyer& other) {
+        if (this == &other) return *this;
+        Account::operator=(other);
+        delete[] favourites;
+
+        city = other.city;
+        messages = other.messages;
+        memberSince = other.memberSince;
+        verified = other.verified;
+        favouritesT = other.favouritesT;
+
+        if (other.favouritesT > 0) {
+            favourites = new Listing*[other.favouritesT];
+            for (int i = 0; i < other.favouritesT; i++) {
+                favourites[i] = other.favourites[i];
+            }
+        } else {
+            favourites = nullptr;
+        }
+        return *this;
     }
 
     void addToFavourites(Listing** listing) {
@@ -577,7 +670,7 @@ class Buyer : public Account {
         
         Listing** temp = new Listing*[favouritesT - 1];
         int j = 0;
-            for (int i = 0; i < favouritesT - 1; i++)
+            for (int i = 0; i < favouritesT; i++)
             {
                 if (i == removeId)
                 {
@@ -768,23 +861,31 @@ class Marketplace {
     }
 
     void postListing(Listing* newListing) {
-        if (listingCount < MAX_LISTINGS_PER_USER)
+        int sellerListigns = 0;
+        int targetAccountId = newListing->getSeller()->getAccountId();
+
+        for (int i = 0; i < listingCount; i++)
         {
-            Listing** temp = new Listing*[listingCount + 1];
-            for (int i = 0; i < listingCount; i++)
+            if (listings[i]->getSeller()->getAccountId() == targetAccountId)
             {
-                temp[i] = listings[i];
+                sellerListigns++;
             }
-            temp[listingCount] = newListing;
-            delete[] listings;
-            listings = temp;
-            listingCount++;
-            Listing::totalListings++;
         }
-        else
+
+        if (sellerListigns >= MAX_LISTINGS_PER_USER)
         {
-            cout << "You have reached the maximum number of listings allowed." << endl;
+            cout << "You have reached the maximum number of active listings allowed (" << MAX_LISTINGS_PER_USER << ")." << endl;
+            return;
         }
+        Listing** temp = new Listing*[listingCount + 1];
+        for (int i = 0; i < listingCount; i++) {
+            temp[i] = listings[i];
+        }
+        temp[listingCount] = newListing;
+        delete[] listings;
+        listings = temp;
+        listingCount++;
+        cout << "Successfully posted listing to the marketplace!" << endl;
     }
 
     void removeListing(int listingId) {
