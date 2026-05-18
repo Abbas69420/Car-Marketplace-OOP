@@ -18,7 +18,7 @@ I have replicated some features or atleast tried to by implementing some OOP fea
 
 ## PakWheels Homepage
 
-![PakWheels Homepage](screenshots/pakwheels_homepage.png)
+![PakWheels Homepage](pakwheels_homepage.png)
 
 ```cpp
 void searchListings(string brand)
@@ -38,7 +38,7 @@ This function allows the user to freely search the Marketplace for listings and 
 
 ## Posting listings
 
-![Posting a Listing](screenshots/post_an_ad.png)
+![Posting a Listing](post_an_ad.png)
 
 ```cpp
 void postListing(Listing *newListing)
@@ -81,7 +81,7 @@ While it might seem like a very complex function but in reality it is quite simp
 
 ## Listings
 
-![Vehicle Listings](screenshots/listings.jpeg)
+![Vehicle Listings](listings.jpeg)
 This is how it looks after listings are posted however I have made a search based system, implementing this was not really my cup of tea.
 
 ---
