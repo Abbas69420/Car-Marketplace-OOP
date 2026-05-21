@@ -275,3 +275,7 @@ friend istream &operator>>(istream &input, Listing &l);
 ## 10. Conclusion
 
 This architecture successfully delivers a scalable, highly secure vehicle marketplace. By transitioning into abstract hierarchies, the application safely manages data models, enforces cross-object communication rules, and provides a clear blueprint for real-world production projects.
+
+# UML Diagram
+
+![UML_Diagram](uml.png)
